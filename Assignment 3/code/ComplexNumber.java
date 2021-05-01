@@ -2,6 +2,7 @@ import java.util.ArrayList;
 
 public class ComplexNumber
 {
+    double Pi = Math.PI;
     /**
      * The real, Re(z), part of the <code>ComplexNumber</code>.
      */
@@ -126,7 +127,7 @@ public class ComplexNumber
 
     public final ComplexNumber lnComplex(int n, int k, int N, boolean isInverse)
     {
-        double power = -n*k*2*Math.PI/N;
+        double power = -n*k*2*Pi/N;
         if (isInverse){
             power = -power;
         }
