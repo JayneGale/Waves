@@ -2,11 +2,8 @@
 
 // DO NOT DISTRIBUTE THIS FILE TO STUDENTS
 import ecs100.UI;
-import ecs100.UIFileChooser;
 
-import javax.sound.sampled.*;
 import java.awt.*;
-import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.time.Duration;
@@ -41,6 +38,7 @@ public class SoundWaveform{
     private ArrayList<Double> waveform = new ArrayList<Double>();   // the displayed waveform
     private ArrayList<ComplexNumber> spectrum = new ArrayList<ComplexNumber>(); // the spectrum: length/mod of each X(k)
     public ComplexNumber complex= new ComplexNumber();
+    public Fourier fourier = new Fourier();
     public ArrayList<ComplexNumber> newSpectrum = new ArrayList<ComplexNumber>();;
     private ArrayList<Double>ifftWaveform = new ArrayList<Double>();   // the displayed waveform
 
@@ -129,22 +127,23 @@ public class SoundWaveform{
         UI.clearText();
         UI.println("DFT in process, please wait...");
         Instant start = Instant.now();
-        ArrayList<Double> case1 = new ArrayList(Arrays.asList(1.0 ,2.0 ,3.0 ,4.0 ,5.0, 6.0, 7.0, 8.0));
-        ArrayList<Double> case2 = new ArrayList(Arrays.asList(1.0 ,2.0 ,1.0 ,2.0 ,1.0 ,2.0 ,1.0 ,2.0));
-        ArrayList<Double> case3 = new ArrayList(Arrays.asList(1.0 ,2.0 ,3.0 ,4.0 , 4.0 ,3.0, 2.0, 1.0));
-        ArrayList<Double> case4 = new ArrayList(Arrays.asList(1.0 ,2.0 ,3.0 ,4.0 ));
-        ArrayList<ComplexNumber> x = new ArrayList<ComplexNumber>();
+//      Test cases
+//        ArrayList<Double> case1 = new ArrayList(Arrays.asList(1.0 ,2.0 ,3.0 ,4.0 ,5.0, 6.0, 7.0, 8.0));
+//        ArrayList<Double> case2 = new ArrayList(Arrays.asList(1.0 ,2.0 ,1.0 ,2.0 ,1.0 ,2.0 ,1.0 ,2.0));
+//        ArrayList<Double> case3 = new ArrayList(Arrays.asList(1.0 ,2.0 ,3.0 ,4.0 , 4.0 ,3.0, 2.0, 1.0));
 //        waveform = case1;
-        // waveform is an array of doubles, size N
+
+//         waveform is an array of doubles, size N
+//         Convert the waveform from a double list to a complex number list to prepare for DFT/FFT
+
+        ArrayList<ComplexNumber> x = new ArrayList<ComplexNumber>();
         int N = waveform.size();
         System.out.println("Waveform size " + waveform.size());
-//          convert the waveform from a simple double to a complex number
         for (int i = 0; i < N; i++){
-            ComplexNumber cn = new ComplexNumber(waveform.get(i), 0.0);
-            x.add(i,cn);
+            x.add(new ComplexNumber(waveform.get(i), 0.0));
         }
         boolean isInverse = false;
-        spectrum = complex.doTransform(x, isInverse);
+        spectrum = fourier.doTransform(x, isInverse);
         newSpectrum = spectrum;
 //      Duration code from StackOverflow https://stackoverflow.com/questions/4927856/how-to-calculate-time-difference-in-java/54428410
         Instant end = Instant.now();
@@ -159,8 +158,8 @@ public class SoundWaveform{
         UI.clearText();
         UI.println("IDFT in process, please wait...");
         Instant start = Instant.now();
-
         ArrayList<ComplexNumber> X = new ArrayList<ComplexNumber>();
+
 //        Test cases
 //        ArrayList<ComplexNumber> case1sp = new ArrayList<ComplexNumber>();
 //          convert the example spectra to complex number ArrayLists
@@ -175,12 +174,15 @@ public class SoundWaveform{
 //            ComplexNumber cn = new ComplexNumber(specReal.get(i), specImag.get(i));
 //            case1sp.add(cn);
 //        }
+
         spectrum = newSpectrum;
         boolean isInverse = true;
         int N = spectrum.size();
         System.out.println("Spectrum size N: " + N);
         waveform.clear();
-        X = complex.doTransform(spectrum, isInverse);
+        X = fourier.doTransform(spectrum, isInverse);
+//         convert the complex number list to a double list to restore th waveform
+//        Since the waveform is real, the real portion of the complex number list is the waveform
         for(int n = 0; n < N; n++){
             waveform.add(n, X.get(n).getRe());
         }
@@ -190,7 +192,8 @@ public class SoundWaveform{
         double deltaT = (double)timeElapsed.toMillis()/60000;
         System.out.println("Time taken: "+ deltaT +" minutes");
         UI.println("IDFT completed!");
-        System.out.println("Inverted waveform " + waveform);
+//        System.out.println("Inverted waveform " + waveform);
+//      Waveform displays the new waveform when the GUI button is pressed
         ArrayList<Double> waveformOut = waveform;
         spectrum.clear();
     }
@@ -207,69 +210,33 @@ public class SoundWaveform{
         UI.println("FFT in process, please wait...");
         Instant start = Instant.now();
         int S = waveform.size();
-//        trim the waveform to a power of 2 and call it x
+
+//      Trim the waveform to a power of 2 and call it x
         if(S > 0){
-            int N = complex.maxPowerof2(S);
-            double[] x = new double[N]; // time signal waveform shortened to a power of 2
+            int N = fourier.maxPowerof2(S);
+//          shorten time signal waveform to a power of 2
+            ComplexNumber[] xc = new ComplexNumber[N];
             for (int i = 0; i < N; i++){
-                x[i] = waveform.get(i);
+//              Convert to an array of complex numbers, to enable same method for FFT and IFFT
+                xc[i] = new ComplexNumber(waveform.get(i), 0.0);
             }
-//            now do the recursive FFT
+//          now do the recursive FFT
             boolean isInverse = false;
-            ComplexNumber[] X = FFT(x);  // X = frequency output from the time signal input
+            ComplexNumber[] X = fourier.FFT(xc, isInverse);  // X = frequency output from the time signal input
             spectrum.addAll(Arrays.asList(X));
             newSpectrum = spectrum;
-//            System.out.println("fft Spectrum case1: " + spectrum.toString() );
-//            spectrum.clear();
         }
 
         else {
             System.err.println("waveform is empty: " + S);
         }
-
-        // Add your code here: you should transform from the waveform to the spectrum
+//      Timer
         Instant end = Instant.now();
         Duration timeElapsed = Duration.between(start, end);
         double deltaT = (double)timeElapsed.toMillis()/1000;
         System.out.println("Time taken: "+ deltaT +" seconds");
         UI.println("FFT completed!");
         waveform.clear();
-    }
-
-    private ComplexNumber[] FFT(double[] x) {
-        boolean isInverse = false;
-        int N = x.length;
-        ComplexNumber[] X = new ComplexNumber[N]; // frequency output
-        if(N == 1){
-            X[0] = new ComplexNumber(x[0], 0.0);
-            return X;
-        }
-//        recursively separate the wave form into even and odd time stamps
-        double[] xeven = new double[N/2];
-        double[] xodd = new double[N/2];
-        for (int n = 0; n < N/2; n ++){
-            xeven[n] = (x[2*n]);
-            xodd[n] = x[2*n+1];
-        }
-// new arrays of even and odd spectrum elements
-        ComplexNumber[] Xeven = FFT(xeven);
-        ComplexNumber[] Xodd = FFT(xodd);
-
-//          calculate W(k,N) = e to the -i*2pi*k/N
-        ComplexNumber[] W = new ComplexNumber[N];
-//        e to the 0 = 1 so cut out any zero n
-        ComplexNumber one = new ComplexNumber(1.0,0.0);
-        for (int k = 0; k < N/2; k++){
-            if(k != 0) {
-                W[k] = complex.lnComplex(1, k, N, isInverse);
-            }
-            else W[k] = one;
-            W[(k + N/2)] = complex.lnComplex(1, k+N/2, N, isInverse);
-
-            X[k] = complex.addComplex(Xeven[k], complex.multiplyComplex(Xodd[k], W[k]));
-            X[k + N/2] = complex.addComplex(Xeven[k], complex.multiplyComplex(Xodd[k], W[(k+N/2)]));
-        }
-        return X;
     }
 
     public void ifft() {
@@ -280,63 +247,32 @@ public class SoundWaveform{
         int S = spectrum.size();
 //        trim the waveform to a power of 2 and call it x // spectrum is complex numbers
         if(S > 0){
-            int N = complex.maxPowerof2(S);
+            int N = fourier.maxPowerof2(S);
             ComplexNumber[] X = new ComplexNumber[N]; // spectrum shortened to a power of 2
             for (int i = 0; i < N; i++){
                 X[i] = spectrum.get(i);
             }
-//            now do the recursive FFT
-            ComplexNumber[] xComp = IFFT(X);
+//          now do the recursive FFT, but with exponent +ve not -ve via isInverse
+            boolean isInverse = true;
+            ComplexNumber[] xComp = fourier.FFT(X, isInverse);
             waveform.clear();
             for(int n = 0; n < N; n++){
                 double z = xComp[n].getRe()/N; // z = the time signal output (created from the frequency spectrum input)
                 waveform.add(z);
             }
             ifftWaveform = waveform;
-//            System.out.println("ifft waveform case1: " + spectrum.toString() );
         }
         else {
             System.err.println("waveform is empty: " + S);
         }
 
+        //      Timer
         Instant end = Instant.now();
         Duration timeElapsed = Duration.between(start, end);
         double deltaT = (double)timeElapsed.toMillis()/1000;
         System.out.println("Time taken: "+ deltaT +" seconds");
         UI.println("IFFT completed!");
         spectrum.clear();
-    }
-    private ComplexNumber[] IFFT(ComplexNumber[] X) {
-        int N = X.length;
-        boolean isInverse = true;
-        ComplexNumber[] x = new ComplexNumber[N]; // time output real
-        if(N == 1){
-            x[0] = X[0];
-            return x;
-        }
-        ComplexNumber[] Xeven = new ComplexNumber[N/2];
-        ComplexNumber[] Xodd = new ComplexNumber[N/2];
-        for (int i = 0; i < N/2; i ++){
-            Xeven[i] = X[2*i];
-            Xodd[i] = X[2*i+1];
-        }
-        ComplexNumber[] xeven = IFFT(Xeven);
-        ComplexNumber[] xodd = IFFT(Xodd);
-        ComplexNumber[] W = new ComplexNumber[N];
-        ComplexNumber one = new ComplexNumber(1.0,0.0);
-
-        //          calculate W(k,N) = e to the i*2pi*k/N (positive not negative for isInverse = true)
-        for (int k = 0; k < N/2; k++){
-            if(k != 0) {
-                W[k] = complex.lnComplex(1, k, N, isInverse);
-            }
-            else W[k] = one;
-            W[(k + N/2)] = complex.lnComplex(1, k+N/2, N, isInverse);
-//            System.out.println("IFFT N: " + N + " k: " + k);
-            x[k] = complex.addComplex(xeven[k], complex.multiplyComplex(xodd[k], W[k]));
-            x[k + N/2] = complex.addComplex(xeven[k], complex.multiplyComplex(xodd[k], W[(k+N/2)]));
-        }
-        return x;
     }
 
     /**
@@ -349,7 +285,6 @@ public class SoundWaveform{
     public void doSaveS() {
         WaveformLoader.doSaveS(spectrum);
     }
-
 
     /**
      * Load the WAV file.

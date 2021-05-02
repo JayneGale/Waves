@@ -120,8 +120,6 @@ public class ComplexNumber
         ComplexNumber product = new ComplexNumber();
         product.real = a.real*b.real - (a.imaginary*b.imaginary);
         product.imaginary = a.imaginary*b.real + b.imaginary*a.real;
-//        set(product);
-//        System.out.println("product " + product.toString());
         return product;
     }
 
@@ -137,42 +135,4 @@ public class ComplexNumber
         return ln;
     }
 
-    public final ArrayList<ComplexNumber> doTransform (ArrayList<ComplexNumber> x, boolean isInverse)
-    {
-        ArrayList<ComplexNumber> X = new ArrayList<>();
-        ComplexNumber ln;
-        ComplexNumber product;
-        int N = x.size();
-        for(int k = 0; k < N; k++){
-            ComplexNumber cn = new ComplexNumber(0, 0);
-            for(int n = 0; n < N; n++){
-                ln = lnComplex(n, k, N, isInverse); // e to the i k b pi/2
-                product = multiplyComplex(x.get(n), ln);
-                cn = addComplex(cn, product);
-            }
-            if(isInverse){
-                cn.real = cn.real/(double)N;
-                cn.imaginary = cn.imaginary/(double)N;
-            }
-            X.add(k,cn);
-//            System.out.println("Spectrum " + X.toString());
-        }
-        return X;
-    }
-    public final boolean isPowerOfTwo(int num)
-    {
-        return num > 0 && (num & (num - 1)) == 0;
-    }
-    public final int maxPowerof2(int S)
-    {
-        double maxPowD = Math.log10(S)/Math.log10(2);
-        int maxPow = (int)Math.floor(maxPowD);
-        System.out.println("Size: " + S + " Num: " + (int) Math.pow(2, maxPow) + " maxPow: " + maxPow);
-        return (int) Math.pow(2, maxPow);
-
-//        double percent = N*100/S;
-//        System.out.println("Size: " + S + " Num: " + N + " maxPowD: " + maxPowD + " maxPow: " + maxPow  + " percentage: " + percent);
-    };
-
-    // Fill in the operations between complex numbers used for DFT/IDFT/FFT/IFFT.
 }
