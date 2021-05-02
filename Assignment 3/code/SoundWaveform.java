@@ -6,10 +6,7 @@ import ecs100.UIFileChooser;
 
 import javax.sound.sampled.*;
 import java.awt.*;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.time.Duration;
@@ -340,7 +337,6 @@ public class SoundWaveform{
             x[k + N/2] = complex.addComplex(xeven[k], complex.multiplyComplex(xodd[k], W[(k+N/2)]));
         }
         return x;
-
     }
 
     /**
@@ -349,6 +345,11 @@ public class SoundWaveform{
     public void doSave() {
         WaveformLoader.doSave(waveform, WaveformLoader.scalingForSavingFile);
     }
+
+    public void doSaveS() {
+        WaveformLoader.doSaveS(spectrum);
+    }
+
 
     /**
      * Load the WAV file.
@@ -373,7 +374,8 @@ public class SoundWaveform{
         UI.addButton("IDFT", wfm::idft);
         UI.addButton("FFT", wfm::fft);
         UI.addButton("IFFT", wfm::ifft);
-        UI.addButton("Save", wfm::doSave);
+        UI.addButton("Save wav", wfm::doSave);
+        UI.addButton("Save txt", wfm::doSaveS);
         UI.addButton("Load", wfm::doLoad);
         UI.addButton("Quit", UI::quit);
 //        UI.setMouseMotionListener(wfm::doMouse);
