@@ -324,21 +324,38 @@ public class SoundWaveform {
 
     public void doMouse(String s, double v, double v1){
         if (this.spectrum == null) { //there is no data to display
-            UI.println("No spectrum to display");
+            UI.println("No spectrum  - create a spectrum to alter");
             return;
         }
-        if(s.equalsIgnoreCase("clicked"))
+        if(s.equalsIgnoreCase("clicked")){
+            // give the pixel height from top of the mouse click
             UI.println("Clicked! s: " + s + " v: " + v + " v1: " + v1);
-        // calculate the mode of each element
-        ArrayList<Double> spectrumMod = new ArrayList<Double>();
-        double max = 0;
-        for (int i = 0; i < spectrum.size(); i++) {
-            if (i == MAX_SAMPLES)
-                break;
+            // calculate the mode of each element
+            ArrayList<Double> spectrumMod = new ArrayList<Double>();
+            double max = 0;
+            for (int i = 0; i < spectrum.size(); i++) {
+                if (i == MAX_SAMPLES)
+                    break;
+                double value = spectrum.get(i).mod();
+                max = Math.max(max, value);
+                spectrumMod.add(spectrum.get(i).mod());
+            }
+//            min v = 10 max v = 1585
+//            index has to be min of spectrumMod.size and Maxsamples
+            double xRatio = (v-GRAPH_LEFT)*MAX_SAMPLES/(double)GRAPH_WIDTH;
+            int xIndex = (int)xRatio;
+            if(xIndex <= 0) xIndex = 0;
+            if(xIndex >= MAX_SAMPLES) xIndex = MAX_SAMPLES-1;
+            UI.println("ratio/graph*samples: " + xRatio + " xIndex: " + xIndex);
+            double ampToPix = max/ZERO_LINE; //(ampl/pixel)
+            double diff_y = ZERO_LINE - v1; //pix
+            double newAmpl = diff_y*ampToPix;
+            double oldAmpl = spectrumMod.get(xIndex);
+            UI.println("max/310 ampToPix: " +  ampToPix + "newAmpl: " + newAmpl + " oldy: " + oldAmpl + " max " + max);
 
-            double value = spectrum.get(i).mod();
-            max = Math.max(max, value);
-            spectrumMod.add(spectrum.get(i).mod());
+
+
+
         }
     }
 }

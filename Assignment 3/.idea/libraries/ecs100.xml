@@ -2,8 +2,11 @@
   <library name="ecs100">
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/code/ecs100.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/ecs100.jar!/" />
     </CLASSES>
     <JAVADOC />
-    <SOURCES />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/Downloads/ecs100.jar!/" />
+    </SOURCES>
   </library>
 </component>
