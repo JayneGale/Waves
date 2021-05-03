@@ -2,12 +2,14 @@
 
 // DO NOT DISTRIBUTE THIS FILE TO STUDENTS
 import ecs100.UI;
+import ecs100.UIMouseListener;
 
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.time.Duration;
 import java.time.Instant;
+import java.awt.event.*;
 
 /*
   getAudioInputStream
@@ -24,29 +26,30 @@ import java.time.Instant;
    -> write to file.
  */
 
-public class SoundWaveform{
+public class SoundWaveform {
 
     public static final double MAX_VALUE = 300;
     public static final int SAMPLE_RATE = 44100;
-    public static final int MAX_SAMPLES = SAMPLE_RATE/100;   // samples in 1/100 sec
+    public static final int MAX_SAMPLES = SAMPLE_RATE / 100;   // samples in 1/100 sec
 
     public static final int GRAPH_LEFT = 10;
     public static final int ZERO_LINE = 310;
     public static final int X_STEP = 2;            //pixels between samples
-    public static final int GRAPH_WIDTH = MAX_SAMPLES*X_STEP;
+    public static final int GRAPH_WIDTH = MAX_SAMPLES * X_STEP;
 
     private ArrayList<Double> waveform = new ArrayList<Double>();   // the displayed waveform
     private ArrayList<ComplexNumber> spectrum = new ArrayList<ComplexNumber>(); // the spectrum: length/mod of each X(k)
-    public ComplexNumber complex= new ComplexNumber();
+    public ComplexNumber complex = new ComplexNumber();
     public Fourier fourier = new Fourier();
-    public ArrayList<ComplexNumber> newSpectrum = new ArrayList<ComplexNumber>();;
-    private ArrayList<Double>ifftWaveform = new ArrayList<Double>();   // the displayed waveform
+    public ArrayList<ComplexNumber> newSpectrum = new ArrayList<ComplexNumber>();
+    ;
+    private ArrayList<Double> ifftWaveform = new ArrayList<Double>();   // the displayed waveform
 
     /**
      * Displays the waveform.
      */
-    public void displayWaveform(){
-        if (this.waveform == null){ //there is no data to display
+    public void displayWaveform() {
+        if (this.waveform == null) { //there is no data to display
             UI.println("No waveform to display");
             return;
         }
@@ -57,17 +60,19 @@ public class SoundWaveform{
 
         // draw x axis (showing where the value 0 will be)
         UI.setColor(Color.black);
-        UI.drawLine(GRAPH_LEFT, ZERO_LINE, GRAPH_LEFT + GRAPH_WIDTH , ZERO_LINE);
+        UI.drawLine(GRAPH_LEFT, ZERO_LINE, GRAPH_LEFT + GRAPH_WIDTH, ZERO_LINE);
 
         // plot points: blue line between each pair of values
         UI.setColor(Color.blue);
 
         double x = GRAPH_LEFT;
-        for (int i=1; i<this.waveform.size(); i++){
-            double y1 = ZERO_LINE - this.waveform.get(i-1);
+        for (int i = 1; i < this.waveform.size(); i++) {
+            double y1 = ZERO_LINE - this.waveform.get(i - 1);
             double y2 = ZERO_LINE - this.waveform.get(i);
-            if (i>MAX_SAMPLES){UI.setColor(Color.red);}
-            UI.drawLine(x, y1, x+X_STEP, y2);
+            if (i > MAX_SAMPLES) {
+                UI.setColor(Color.red);
+            }
+            UI.drawLine(x, y1, x + X_STEP, y2);
             x = x + X_STEP;
         }
 
@@ -78,7 +83,7 @@ public class SoundWaveform{
      * Displays the spectrum. Scale to the range of +/- 300.
      */
     public void displaySpectrum() {
-        if (this.spectrum == null){ //there is no data to display
+        if (this.spectrum == null) { //there is no data to display
             UI.println("No spectrum to display");
             return;
         }
@@ -99,24 +104,26 @@ public class SoundWaveform{
             spectrumMod.add(spectrum.get(i).mod());
         }
 
-        double scaling = 300/max;
+        double scaling = 300 / max;
         for (int i = 0; i < spectrumMod.size(); i++) {
-            spectrumMod.set(i, spectrumMod.get(i)*scaling);
+            spectrumMod.set(i, spectrumMod.get(i) * scaling);
         }
 
         // draw x axis (showing where the value 0 will be)
         UI.setColor(Color.black);
-        UI.drawLine(GRAPH_LEFT, ZERO_LINE, GRAPH_LEFT + GRAPH_WIDTH , ZERO_LINE);
+        UI.drawLine(GRAPH_LEFT, ZERO_LINE, GRAPH_LEFT + GRAPH_WIDTH, ZERO_LINE);
 
         // plot points: blue line between each pair of values
         UI.setColor(Color.blue);
 
         double x = GRAPH_LEFT;
-        for (int i=1; i<spectrumMod.size(); i++){
+        for (int i = 1; i < spectrumMod.size(); i++) {
             double y1 = ZERO_LINE;
             double y2 = ZERO_LINE - spectrumMod.get(i);
-            if (i>MAX_SAMPLES){UI.setColor(Color.red);}
-            UI.drawLine(x, y1, x+X_STEP, y2);
+            if (i > MAX_SAMPLES) {
+                UI.setColor(Color.red);
+            }
+            UI.drawLine(x, y1, x + X_STEP, y2);
             x = x + X_STEP;
         }
 
@@ -139,7 +146,7 @@ public class SoundWaveform{
         ArrayList<ComplexNumber> x = new ArrayList<ComplexNumber>();
         int N = waveform.size();
         System.out.println("Waveform size " + waveform.size());
-        for (int i = 0; i < N; i++){
+        for (int i = 0; i < N; i++) {
             x.add(new ComplexNumber(waveform.get(i), 0.0));
         }
         boolean isInverse = false;
@@ -148,8 +155,8 @@ public class SoundWaveform{
 //      Duration code from StackOverflow https://stackoverflow.com/questions/4927856/how-to-calculate-time-difference-in-java/54428410
         Instant end = Instant.now();
         Duration timeElapsed = Duration.between(start, end);
-        double deltaT = (double)timeElapsed.toMillis()/60000;
-        System.out.println("Time taken: "+ deltaT +" minutes");
+        double deltaT = (double) timeElapsed.toMillis() / 60000;
+        System.out.println("Time taken: " + deltaT + " minutes");
         UI.println("DFT completed!");
         waveform.clear();
     }
@@ -183,14 +190,14 @@ public class SoundWaveform{
         X = fourier.doTransform(spectrum, isInverse);
 //         convert the complex number list to a double list to restore th waveform
 //        Since the waveform is real, the real portion of the complex number list is the waveform
-        for(int n = 0; n < N; n++){
+        for (int n = 0; n < N; n++) {
             waveform.add(n, X.get(n).getRe());
         }
 
         Instant end = Instant.now();
         Duration timeElapsed = Duration.between(start, end);
-        double deltaT = (double)timeElapsed.toMillis()/60000;
-        System.out.println("Time taken: "+ deltaT +" minutes");
+        double deltaT = (double) timeElapsed.toMillis() / 60000;
+        System.out.println("Time taken: " + deltaT + " minutes");
         UI.println("IDFT completed!");
 //        System.out.println("Inverted waveform " + waveform);
 //      Waveform displays the new waveform when the GUI button is pressed
@@ -212,11 +219,11 @@ public class SoundWaveform{
         int S = waveform.size();
 
 //      Trim the waveform to a power of 2 and call it x
-        if(S > 0){
+        if (S > 0) {
             int N = fourier.maxPowerof2(S);
 //          shorten time signal waveform to a power of 2
             ComplexNumber[] xc = new ComplexNumber[N];
-            for (int i = 0; i < N; i++){
+            for (int i = 0; i < N; i++) {
 //              Convert to an array of complex numbers, to enable same method for FFT and IFFT
                 xc[i] = new ComplexNumber(waveform.get(i), 0.0);
             }
@@ -225,16 +232,14 @@ public class SoundWaveform{
             ComplexNumber[] X = fourier.FFT(xc, isInverse);  // X = frequency output from the time signal input
             spectrum.addAll(Arrays.asList(X));
             newSpectrum = spectrum;
-        }
-
-        else {
+        } else {
             System.err.println("waveform is empty: " + S);
         }
 //      Timer
         Instant end = Instant.now();
         Duration timeElapsed = Duration.between(start, end);
-        double deltaT = (double)timeElapsed.toMillis()/1000;
-        System.out.println("Time taken: "+ deltaT +" seconds");
+        double deltaT = (double) timeElapsed.toMillis() / 1000;
+        System.out.println("Time taken: " + deltaT + " seconds");
         UI.println("FFT completed!");
         waveform.clear();
     }
@@ -245,32 +250,32 @@ public class SoundWaveform{
         Instant start = Instant.now();
         spectrum = newSpectrum;
         int S = spectrum.size();
-//        trim the waveform to a power of 2 and call it x // spectrum is complex numbers
-        if(S > 0){
-            int N = fourier.maxPowerof2(S);
+//        check spectrum is not empty and is a  power of 2 (should not need this but worth a check)
+        if (S <= 0 || fourier.isPowerOfTwo(S)) {
+//        change spectrum list to an array X of complex numbers so I can use the same method
+            int N = S;
             ComplexNumber[] X = new ComplexNumber[N]; // spectrum shortened to a power of 2
-            for (int i = 0; i < N; i++){
+            for (int i = 0; i < N; i++) {
                 X[i] = spectrum.get(i);
             }
 //          now do the recursive FFT, but with exponent +ve not -ve via isInverse
             boolean isInverse = true;
             ComplexNumber[] xComp = fourier.FFT(X, isInverse);
             waveform.clear();
-            for(int n = 0; n < N; n++){
-                double z = xComp[n].getRe()/N; // z = the time signal output (created from the frequency spectrum input)
+            for (int n = 0; n < N; n++) {
+                double z = xComp[n].getRe() / N; // z = the time signal output (created from the frequency spectrum input)
                 waveform.add(z);
             }
             ifftWaveform = waveform;
-        }
-        else {
-            System.err.println("waveform is empty: " + S);
+        } else {
+            System.err.println("spectrum is empty or not power of 2 - size: " + S);
         }
 
         //      Timer
         Instant end = Instant.now();
         Duration timeElapsed = Duration.between(start, end);
-        double deltaT = (double)timeElapsed.toMillis()/1000;
-        System.out.println("Time taken: "+ deltaT +" seconds");
+        double deltaT = (double) timeElapsed.toMillis() / 1000;
+        System.out.println("Time taken: " + deltaT + " seconds");
         UI.println("IFFT completed!");
         spectrum.clear();
     }
@@ -300,7 +305,7 @@ public class SoundWaveform{
         UI.println("Loading completed!");
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
         SoundWaveform wfm = new SoundWaveform();
         //core
         UI.addButton("Display Waveform", wfm::displayWaveform);
@@ -313,7 +318,27 @@ public class SoundWaveform{
         UI.addButton("Save txt", wfm::doSaveS);
         UI.addButton("Load", wfm::doLoad);
         UI.addButton("Quit", UI::quit);
-//        UI.setMouseMotionListener(wfm::doMouse);
+        UI.setMouseMotionListener(wfm::doMouse);
         UI.setWindowSize(950, 630);
+    }
+
+    public void doMouse(String s, double v, double v1){
+        if (this.spectrum == null) { //there is no data to display
+            UI.println("No spectrum to display");
+            return;
+        }
+        if(s.equalsIgnoreCase("clicked"))
+            UI.println("Clicked! s: " + s + " v: " + v + " v1: " + v1);
+        // calculate the mode of each element
+        ArrayList<Double> spectrumMod = new ArrayList<Double>();
+        double max = 0;
+        for (int i = 0; i < spectrum.size(); i++) {
+            if (i == MAX_SAMPLES)
+                break;
+
+            double value = spectrum.get(i).mod();
+            max = Math.max(max, value);
+            spectrumMod.add(spectrum.get(i).mod());
+        }
     }
 }
