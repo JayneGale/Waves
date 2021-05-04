@@ -135,7 +135,7 @@ public class SoundWaveform {
         }
         if(s.equalsIgnoreCase("clicked")){
             // give the pixel height from top of the mouse click
-            UI.println("Clicked! x v: " + v + "y v1: " + v1);
+            UI.println("Clicked x: " + v + " y: " + v1);
             // calculate the mode of each element
 
             ArrayList<Double> spectrumMod = new ArrayList<Double>();
@@ -147,32 +147,48 @@ public class SoundWaveform {
                 max = Math.max(max, value);
                 spectrumMod.add(spectrum.get(i).mod());
             }
-//            min v = 10 max v = 1585
-//            min v1 = 0 = top of screen, max v1 = 1050
-//            index has to fit in spectrumMod
+            double scaling = 300 / max; // could i pass max from above? public? pix/ampl
+            UI.println("scaling: " +  scaling + " max " + (int)max);
 
-//            Calculate x index of spectrumMod and make sure its within the array bounds
+            for (int i = 0; i < spectrumMod.size(); i++) {
+                spectrumMod.set(i, spectrumMod.get(i) * scaling);
+            }
+
+//           Calculate x index of spectrumMod and make sure its within the array bounds
+//           Find the x index of the click - make sure it fits within spectrumMod index range 0- spectrumMod size
             double xRatio = (v-GRAPH_LEFT)/(double)X_STEP; // where the zero index is at GRAPH LEFT 10, and there are 2 pixel steps per index
             int xIndex = (int) Math.floor(xRatio);
             if(xIndex < 0) xIndex = 0;
             else if(xIndex >= spectrumMod.size()) xIndex = spectrumMod.size()-1;
-            UI.println("xIndex: " + xIndex + " of 441");
-            double scaling = 300 / max; // could i pass max from above? public? pix/ampl
+            UI.println("xIndex: " + xIndex + " of 441 " + spectrumMod.size());
+
+//           Calculate the ratio of the y click between the zero line (310) and the top of the display (300 = scaling factor)
             double diff_y = ZERO_LINE - v1; //pix
             if (diff_y<0) diff_y = 0; // spectrum has to be non-negative
             else if (diff_y > 300) diff_y = 300; // don't allow it to scale over the maximum
+//           When diffy = 0 scaleY = 0; when diffy = 300 result = 1; when diffy = 150 result = 1/2
+            double scaleY = diff_y/300.0;
+            UI.println(" diff_y: " + diff_y + " scaleY: " + scaleY);
 
-            UI.println("scaling: " +  scaling + " max " + (int)max + " diff_y: " + diff_y);
-            for (int i = 0; i < spectrumMod.size(); i++) {
-                spectrumMod.set(i, spectrumMod.get(i) * scaling);
-            }
-//           when diffy = 0 scaleY = 0; when diffy = 300 result = 1; when diffy = 150 result = 1/2
-            double scaleY = diff_y/300;
+//            can delete these after debugging
             double oldAmpl = spectrumMod.get(xIndex);
-            double newAmpl = spectrumMod.get(xIndex)*diff_y/300;
-            UI.println(" diff_y: " + diff_y + " scaleY:" + scaleY + " oldAmpl:" + oldAmpl + " max:" + max);
+            double newAmpl = scaleY * 300;
+            UI.println("oldAmpl: " + (int)oldAmpl + " newAmpl: " + (int)newAmpl);
 
-            spectrumMod.set(xIndex, max*scaling*diff_y/300);
+            //          For display on the graphics - change spectrumMod, a real number
+            spectrumMod.set(xIndex, newAmpl);
+
+//           To change the waveform, change the spectrum which is a complex number
+//            To keep the same phase, set new Re and Im proportional to the original spectrum Re:Im
+
+            double newToOldAmpl = newAmpl/oldAmpl;
+            double xo = spectrum.get(xIndex).getRe();
+            double yo = spectrum.get(xIndex).getIm();
+            double xn = xo * newToOldAmpl;
+            double yn = yo * newToOldAmpl;
+            UI.println("newToOld " + (int)newToOldAmpl + " orig x: " + (int)xo + " y: " + (int)yo + " new x: " + (int)xn + " y: " + (int)yn);
+            spectrum.set(xIndex, new ComplexNumber(xn,yn));
+
             // draw x axis (showing where the value 0 will be)
             UI.clearGraphics();
             UI.setColor(Color.black);
@@ -191,11 +207,10 @@ public class SoundWaveform {
                 UI.drawLine(x, y1, x + X_STEP, y2);
                 x = x + X_STEP;
             }
-
             UI.println("Printing completed!");
         }
 
-        }
+    }
 
     public void dft() {
         UI.clearText();
