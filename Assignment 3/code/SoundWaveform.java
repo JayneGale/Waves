@@ -89,7 +89,6 @@ public class SoundWaveform {
         }
         UI.clearText();
         UI.println("Printing, please wait...");
-
         UI.clearGraphics();
 
         // calculate the mode of each element
@@ -129,6 +128,74 @@ public class SoundWaveform {
 
         UI.println("Printing completed!");
     }
+    public void doMouse(String s, double v, double v1){
+        if (this.spectrum == null) { //there is no data to display
+            UI.println("No spectrum  - create a spectrum to alter");
+            return;
+        }
+        if(s.equalsIgnoreCase("clicked")){
+            // give the pixel height from top of the mouse click
+            UI.println("Clicked! x v: " + v + "y v1: " + v1);
+            // calculate the mode of each element
+
+            ArrayList<Double> spectrumMod = new ArrayList<Double>();
+            double max = 0;
+            for (int i = 0; i < spectrum.size(); i++) {
+                if (i == MAX_SAMPLES)
+                    break;
+                double value = spectrum.get(i).mod();
+                max = Math.max(max, value);
+                spectrumMod.add(spectrum.get(i).mod());
+            }
+//            min v = 10 max v = 1585
+//            min v1 = 0 = top of screen, max v1 = 1050
+//            index has to fit in spectrumMod
+
+//            Calculate x index of spectrumMod and make sure its within the array bounds
+            double xRatio = (v-GRAPH_LEFT)/(double)X_STEP; // where the zero index is at GRAPH LEFT 10, and there are 2 pixel steps per index
+            int xIndex = (int) Math.floor(xRatio);
+            if(xIndex < 0) xIndex = 0;
+            else if(xIndex >= spectrumMod.size()) xIndex = spectrumMod.size()-1;
+            UI.println("xIndex: " + xIndex + " of 441");
+            double scaling = 300 / max; // could i pass max from above? public? pix/ampl
+            double diff_y = ZERO_LINE - v1; //pix
+            if (diff_y<0) diff_y = 0; // spectrum has to be non-negative
+            else if (diff_y > 300) diff_y = 300; // don't allow it to scale over the maximum
+
+            UI.println("scaling: " +  scaling + " max " + (int)max + " diff_y: " + diff_y);
+            for (int i = 0; i < spectrumMod.size(); i++) {
+                spectrumMod.set(i, spectrumMod.get(i) * scaling);
+            }
+//           when diffy = 0 scaleY = 0; when diffy = 300 result = 1; when diffy = 150 result = 1/2
+            double scaleY = diff_y/300;
+            double oldAmpl = spectrumMod.get(xIndex);
+            double newAmpl = spectrumMod.get(xIndex)*diff_y/300;
+            UI.println(" diff_y: " + diff_y + " scaleY:" + scaleY + " oldAmpl:" + oldAmpl + " max:" + max);
+
+            spectrumMod.set(xIndex, max*scaling*diff_y/300);
+            // draw x axis (showing where the value 0 will be)
+            UI.clearGraphics();
+            UI.setColor(Color.black);
+            UI.drawLine(GRAPH_LEFT, ZERO_LINE, GRAPH_LEFT + GRAPH_WIDTH, ZERO_LINE);
+
+            // plot points: blue line between each pair of values
+            UI.setColor(Color.pink);
+
+            double x = GRAPH_LEFT;
+            for (int i = 1; i < spectrumMod.size(); i++) {
+                double y1 = ZERO_LINE;
+                double y2 = ZERO_LINE - spectrumMod.get(i);
+                if (i > MAX_SAMPLES) {
+                    UI.setColor(Color.red);
+                }
+                UI.drawLine(x, y1, x + X_STEP, y2);
+                x = x + X_STEP;
+            }
+
+            UI.println("Printing completed!");
+        }
+
+        }
 
     public void dft() {
         UI.clearText();
@@ -322,40 +389,4 @@ public class SoundWaveform {
         UI.setWindowSize(950, 630);
     }
 
-    public void doMouse(String s, double v, double v1){
-        if (this.spectrum == null) { //there is no data to display
-            UI.println("No spectrum  - create a spectrum to alter");
-            return;
-        }
-        if(s.equalsIgnoreCase("clicked")){
-            // give the pixel height from top of the mouse click
-            UI.println("Clicked! s: " + s + " v: " + v + " v1: " + v1);
-            // calculate the mode of each element
-            ArrayList<Double> spectrumMod = new ArrayList<Double>();
-            double max = 0;
-            for (int i = 0; i < spectrum.size(); i++) {
-                if (i == MAX_SAMPLES)
-                    break;
-                double value = spectrum.get(i).mod();
-                max = Math.max(max, value);
-                spectrumMod.add(spectrum.get(i).mod());
-            }
-//            min v = 10 max v = 1585
-//            index has to be min of spectrumMod.size and Maxsamples
-            double xRatio = (v-GRAPH_LEFT)*MAX_SAMPLES/(double)GRAPH_WIDTH;
-            int xIndex = (int)xRatio;
-            if(xIndex <= 0) xIndex = 0;
-            if(xIndex >= MAX_SAMPLES) xIndex = MAX_SAMPLES-1;
-            UI.println("ratio/graph*samples: " + xRatio + " xIndex: " + xIndex);
-            double ampToPix = max/ZERO_LINE; //(ampl/pixel)
-            double diff_y = ZERO_LINE - v1; //pix
-            double newAmpl = diff_y*ampToPix;
-            double oldAmpl = spectrumMod.get(xIndex);
-            UI.println("max/310 ampToPix: " +  ampToPix + "newAmpl: " + newAmpl + " oldy: " + oldAmpl + " max " + max);
-
-
-
-
-        }
-    }
 }
